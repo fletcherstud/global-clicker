@@ -22,7 +22,10 @@ class SocketService {
 
     this.socket.on('buttonPressed', (data) => {
       if (this.statsCallback) {
-        this.statsCallback(this.formatStats([data.stats]));
+        this.statsCallback(prevStats => ({
+          ...prevStats,
+          [data.stats.country]: data.stats.pressCount
+        }));
       }
       if (this.buttonPressCallback) {
         this.buttonPressCallback(data);
