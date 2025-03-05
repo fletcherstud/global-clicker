@@ -5,6 +5,8 @@ class SocketService {
     this.socket = null;
     this.statsCallback = null;
     this.buttonPressCallback = null;
+    this.clientId = Math.random().toString(36).substring(2, 15); // Generate a random client ID
+    this.lastPressClientId = null;
   }
 
   connect() {
@@ -21,6 +23,9 @@ class SocketService {
     });
 
     this.socket.on('buttonPressed', (data) => {
+      // Update the last press client ID
+      this.lastPressClientId = data.clientId;
+      
       if (this.statsCallback) {
         this.statsCallback(prevStats => ({
           ...prevStats,
@@ -52,9 +57,16 @@ class SocketService {
     this.buttonPressCallback = callback;
   }
 
+  canPressButton() {
+    return this.lastPressClientId === null || this.lastPressClientId !== this.clientId;
+  }
+
   emitButtonPress(data) {
-    if (this.socket) {
-      this.socket.emit('buttonPress', data);
+    if (this.socket && this.canPressButton()) {
+      this.socket.emit('buttonPress', {
+        ...data,
+        clientId: this.clientId
+      });
     }
   }
 

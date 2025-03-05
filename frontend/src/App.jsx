@@ -36,6 +36,7 @@ function App() {
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [particleOrigin, setParticleOrigin] = useState({ x: 0, y: 0 });
+  const [canPress, setCanPress] = useState(true);
 
   useEffect(() => {
     // Connect to WebSocket server
@@ -46,6 +47,9 @@ function App() {
 
     // Set up button press listener
     socketService.onButtonPress((data) => {
+      // Update can press state
+      setCanPress(socketService.canPressButton());
+      
       // Dispatch custom event for the Globe component
       window.dispatchEvent(new CustomEvent('serverButtonPress', {
         detail: data
@@ -59,14 +63,14 @@ function App() {
   }, []);
 
   const handleButtonPress = useCallback(() => {
-    if (!isAnimating) {
+    if (!isAnimating && canPress) {
       // Generate random coordinates
       const pressData = getRandomCoordinates();
 
       // Emit to server
       socketService.emitButtonPress(pressData);
     }
-  }, [isAnimating]);
+  }, [isAnimating, canPress]);
 
   const handleAnimationStart = useCallback((position) => {
     setParticleOrigin(position);
@@ -119,6 +123,7 @@ function App() {
         <GlowButton 
           onClick={handleButtonPress}
           onAnimationStart={handleAnimationStart}
+          disabled={!canPress || isAnimating}
         />
         <div className="flex flex-col items-center gap-2 mt-2">
           <button

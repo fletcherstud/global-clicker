@@ -70,7 +70,6 @@ io.on('connection', async (socket) => {
   }
 
   socket.on('buttonPress', async (data) => {
-    
     // Check MongoDB connection before processing
     if (mongoose.connection.readyState !== 1) {
       socket.emit('error', { message: 'Database connection error' });
@@ -84,7 +83,8 @@ io.on('connection', async (socket) => {
         location: {
           type: 'Point',
           coordinates: [data.longitude, data.latitude]
-        }
+        },
+        clientId: data.clientId // Store the client ID
       });
       
       await Promise.race([
@@ -117,7 +117,8 @@ io.on('connection', async (socket) => {
         country: data.country,
         location: buttonPress.location,
         pressedAt: buttonPress.pressedAt,
-        stats: stats
+        stats: stats,
+        clientId: data.clientId // Include the client ID in the broadcast
       });
 
     } catch (error) {

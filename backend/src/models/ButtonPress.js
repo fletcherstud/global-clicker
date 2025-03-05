@@ -10,23 +10,29 @@ const buttonPressSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['Point'],
-      default: 'Point'
+      required: true
     },
     coordinates: {
-      type: [Number], // [longitude, latitude]
-      required: true,
-      index: '2dsphere'
+      type: [Number],
+      required: true
     }
   },
   pressedAt: {
     type: Date,
-    default: Date.now,
+    default: Date.now
+  },
+  clientId: {
+    type: String,
+    required: true,
     index: true
   }
+}, {
+  timestamps: true
 });
 
 // Create compound index for efficient querying
 buttonPressSchema.index({ country: 1, pressedAt: -1 });
+buttonPressSchema.index({ location: '2dsphere' });
 
 const ButtonPress = mongoose.model('ButtonPress', buttonPressSchema);
 
