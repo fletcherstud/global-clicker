@@ -12,8 +12,8 @@ function GlobeComponent() {
     // Initialize after a small delay to ensure DOM is ready
     setTimeout(() => {
       globe = Globe()(globeEl.current)
-        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .backgroundImageUrl(null)
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .backgroundImageUrl(null)
         .width(window.innerWidth)
         .height(window.innerHeight)
         .backgroundColor('#000000')
@@ -39,8 +39,7 @@ function GlobeComponent() {
           { startLat: 40.7128, startLng: -74.0060, endLat: 51.5074, endLng: -0.1278 },
           { startLat: 51.5074, startLng: -0.1278, endLat: 35.6762, endLng: 139.6503 }
         ])
-        .arcAltitude(0.2)
-        .globeRadius(50);
+        .arcAltitude(0.2);
 
       // Handle window resize
       handleResize = () => {
