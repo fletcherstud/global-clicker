@@ -79,7 +79,8 @@ function GlobeComponent() {
     if (pressQueueRef.current.length === 0) {
       console.log('Queue empty, stopping processing');
       isProcessingRef.current = false;
-      setArcs([]);
+      setArcs([]); // Clear any arcs
+      // Point will be shown automatically by the useEffect when queue is empty
       return;
     }
 
@@ -197,7 +198,14 @@ function GlobeComponent() {
         .pointColor(() => '#fff')
         .pointRadius(0.12)
         .pointAltitude(0)
-        .pointsMerge(true)
+        .pointsMerge(false)
+        .onPointHover(point => {
+          console.log('Point hovered:', point);
+          const controls = window.globeInstance.controls();
+          if (controls) {
+            controls.autoRotate = !point; // pause rotation when hovering over point
+          }
+        })
         .arcColor(() => '#fff')
         .arcDashLength(1)
         .arcDashGap(1)
@@ -252,7 +260,8 @@ function GlobeComponent() {
     // Only update if we have valid coordinates
     if (lastPressLocation && isValidCoordinate(lastPressLocation.lat, lastPressLocation.lng)) {
       window.globeInstance
-        .pointsData([lastPressLocation])
+        .pointsData(pressQueueRef.current.length === 0 ? [lastPressLocation] : []) // Only show point when queue is empty
+        .pointAltitude(.15)
         .arcsData(arcs);
     } else {
       // If coordinates are invalid, clear the visualization
