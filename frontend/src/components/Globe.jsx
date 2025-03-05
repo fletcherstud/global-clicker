@@ -7,6 +7,9 @@ function GlobeComponent() {
   const [lastPressLocation, setLastPressLocation] = useState(null)
   const [arcs, setArcs] = useState([])
   const handleServerButtonPressRef = useRef(null)
+  const pressQueueRef = useRef([])
+  const isProcessingRef = useRef(false)
+  const animationTimeoutRef = useRef(null)
 
   // Helper function to calculate distance between two points
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
@@ -60,9 +63,101 @@ function GlobeComponent() {
     return null;
   };
 
-  // Handle new button press from any client
+  // Helper function to calculate arc animation duration based on distance
+  const getAnimationDuration = (startLat, startLng, endLat, endLng) => {
+    const distance = calculateDistance(startLat, startLng, endLat, endLng);
+    // Base duration for short distances (in ms)
+    const baseDuration = 1000;
+    // Additional duration per 1000km of distance
+    const durationPerThousandKm = 500;
+    return baseDuration + (distance / 1000) * durationPerThousandKm;
+  };
+
+  const processNextInQueue = useCallback(async () => {
+    console.log('Processing queue, length:', pressQueueRef.current.length);
+    
+    if (pressQueueRef.current.length === 0) {
+      console.log('Queue empty, stopping processing');
+      isProcessingRef.current = false;
+      setArcs([]);
+      return;
+    }
+
+    isProcessingRef.current = true;
+    const nextLocation = pressQueueRef.current[0];
+    console.log('Processing location:', nextLocation);
+
+    setLastPressLocation(prevLocation => {
+      // Handle first press differently
+      if (!prevLocation || !isValidCoordinate(prevLocation.lat, prevLocation.lng)) {
+        console.log('First press, setting initial location');
+        setArcs([]); // Clear any arcs
+        
+        // Remove first item and continue processing after a delay
+        setTimeout(() => {
+          pressQueueRef.current = pressQueueRef.current.slice(1);
+          if (pressQueueRef.current.length > 0) {
+            processNextInQueue();
+          } else {
+            isProcessingRef.current = false;
+          }
+        }, 500); // Short delay for first press
+
+        return nextLocation;
+      }
+
+      // Handle subsequent presses
+      const altitude = getArcAltitude(
+        prevLocation.lat,
+        prevLocation.lng,
+        nextLocation.lat,
+        nextLocation.lng
+      );
+
+      // Calculate animation duration based on distance
+      const animDuration = getAnimationDuration(
+        prevLocation.lat,
+        prevLocation.lng,
+        nextLocation.lat,
+        nextLocation.lng
+      );
+
+      const newArc = {
+        startLat: prevLocation.lat,
+        startLng: prevLocation.lng,
+        endLat: nextLocation.lat,
+        endLng: nextLocation.lng,
+        altitude,
+        animationDuration: animDuration
+      };
+
+      console.log('Creating new arc:', newArc, 'animation duration:', animDuration);
+      setArcs([newArc]);
+
+      // Clear any existing timeout
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+      
+      // Schedule next animation
+      animationTimeoutRef.current = setTimeout(() => {
+        console.log('Animation complete, removing from queue');
+        setArcs([]); // Clear the arc immediately after animation
+        pressQueueRef.current = pressQueueRef.current.slice(1);
+        
+        if (pressQueueRef.current.length > 0) {
+          processNextInQueue();
+        } else {
+          console.log('Queue processed completely');
+          isProcessingRef.current = false;
+        }
+      }, animDuration + 100); // Add small buffer for cleanup
+
+      return nextLocation;
+    });
+  }, []);
+
   const handleNewPress = useCallback((data) => {
-    // Extract coordinates from server data
     const coords = extractCoordinates(data);
     if (!coords || !isValidCoordinate(coords.lat, coords.lng)) {
       console.error('Invalid coordinates received:', data);
@@ -75,41 +170,21 @@ function GlobeComponent() {
       name: data.country
     };
 
-    setLastPressLocation(prevLocation => {
-      if (prevLocation && isValidCoordinate(prevLocation.lat, prevLocation.lng)) {
-        // Calculate arc altitude based on distance
-        const altitude = getArcAltitude(
-          prevLocation.lat, 
-          prevLocation.lng, 
-          newLocation.lat, 
-          newLocation.lng
-        );
+    console.log('Adding new press to queue:', newLocation);
+    pressQueueRef.current.push(newLocation);
 
-        // Create new arc
-        const newArc = {
-          startLat: prevLocation.lat,
-          startLng: prevLocation.lng,
-          endLat: newLocation.lat,
-          endLng: newLocation.lng,
-          altitude
-        };
-
-        // Update arcs state to only keep the last two arcs
-        setArcs(prevArcs => {
-          // Keep only the last arc and add the new one
-          const updatedArcs = [...prevArcs.slice(-1), newArc];
-          return updatedArcs;
-        });
-      }
-      return newLocation;
-    });
-  }, []);
+    if (!isProcessingRef.current) {
+      console.log('Starting queue processing');
+      processNextInQueue();
+    } else {
+      console.log('Queue is already being processed, items in queue:', pressQueueRef.current.length);
+    }
+  }, [processNextInQueue]);
 
   useEffect(() => {
     let globe;
     let handleResize;
     
-    // Initialize after a small delay to ensure DOM is ready
     setTimeout(() => {
       globe = Globe()(globeEl.current)
         .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
@@ -124,9 +199,9 @@ function GlobeComponent() {
         .pointAltitude(0)
         .pointsMerge(true)
         .arcColor(() => '#fff')
-        .arcDashLength(0.6)
-        .arcDashGap(0.3)
-        .arcDashAnimateTime(1500)
+        .arcDashLength(1)
+        .arcDashGap(1)
+        .arcDashAnimateTime(d => d.animationDuration) // Use dynamic animation duration
         .arcStroke(0.5)
         .arcAltitudeAutoScale(false)
         .arcAltitude(d => d.altitude || 0.5);
@@ -157,8 +232,10 @@ function GlobeComponent() {
       window.globeInstance = globe;
     }, 100);
 
-    // Cleanup
     return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
       if (globe) {
         if (handleResize) {
           window.removeEventListener('resize', handleResize);
