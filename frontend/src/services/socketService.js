@@ -5,8 +5,17 @@ class SocketService {
     this.socket = null;
     this.statsCallback = null;
     this.buttonPressCallback = null;
-    this.clientId = Math.random().toString(36).substring(2, 15); // Generate a random client ID
-    this.lastPressClientId = null;
+    
+    // Get existing clientId from localStorage or generate a new one
+    let storedClientId = localStorage.getItem('globalClickerClientId');
+    if (!storedClientId) {
+      storedClientId = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('globalClickerClientId', storedClientId);
+    }
+    this.clientId = storedClientId;
+    
+    // Get last press client ID from localStorage
+    this.lastPressClientId = localStorage.getItem('globalClickerLastPressId');
   }
 
   connect() {
@@ -23,8 +32,9 @@ class SocketService {
     });
 
     this.socket.on('buttonPressed', (data) => {
-      // Update the last press client ID
+      // Update and persist the last press client ID
       this.lastPressClientId = data.clientId;
+      localStorage.setItem('globalClickerLastPressId', data.clientId);
       
       if (this.statsCallback) {
         this.statsCallback(prevStats => ({

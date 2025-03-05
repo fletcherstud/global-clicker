@@ -36,7 +36,7 @@ function App() {
   const [isAutoRotating, setIsAutoRotating] = useState(true);
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [particleOrigin, setParticleOrigin] = useState({ x: 0, y: 0 });
-  const [canPress, setCanPress] = useState(true);
+  const [canPress, setCanPress] = useState(socketService.canPressButton());
 
   useEffect(() => {
     // Connect to WebSocket server
