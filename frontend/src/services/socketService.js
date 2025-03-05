@@ -4,6 +4,7 @@ class SocketService {
   constructor() {
     this.socket = null;
     this.statsCallback = null;
+    this.buttonPressCallback = null;
   }
 
   connect() {
@@ -23,6 +24,9 @@ class SocketService {
       if (this.statsCallback) {
         this.statsCallback(this.formatStats([data.stats]));
       }
+      if (this.buttonPressCallback) {
+        this.buttonPressCallback(data);
+      }
     });
 
     this.socket.on('error', (error) => {
@@ -39,6 +43,10 @@ class SocketService {
 
   onStatsUpdate(callback) {
     this.statsCallback = callback;
+  }
+
+  onButtonPress(callback) {
+    this.buttonPressCallback = callback;
   }
 
   emitButtonPress(data) {
