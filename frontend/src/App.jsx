@@ -34,6 +34,7 @@ function App() {
   const [stats, setStats] = useState({});
   const [isAnimating, setIsAnimating] = useState(false);
   const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const [isFollowMode, setIsFollowMode] = useState(false);
   const [particleOrigin, setParticleOrigin] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -75,16 +76,42 @@ function App() {
     }, 2000);
   }, []);
 
-  const handleRotationToggle = useCallback(() => {
-    if (window.toggleGlobeRotation) {
-      window.toggleGlobeRotation();
-      setIsAutoRotating(prev => !prev);
+  const handleGlobeModeToggle = useCallback(() => {
+    if (window.toggleGlobeRotation && window.toggleGlobeFollowMode) {
+      // Cycle through states: Auto-rotate -> Paused -> Follow -> Auto-rotate
+      if (isAutoRotating) {
+        // Switch from Auto-rotate to Paused
+        window.toggleGlobeRotation();
+        setIsAutoRotating(false);
+      } else if (!isAutoRotating && !isFollowMode) {
+        // Switch from Paused to Follow
+        // First disable auto-rotation if it's somehow still on
+        if (isAutoRotating) {
+          window.toggleGlobeRotation();
+          setIsAutoRotating(false);
+        }
+        // Enable follow mode
+        setIsFollowMode(true);
+        window.toggleGlobeFollowMode();
+      } else {
+        // Switch from Follow back to Auto-rotate
+        setIsFollowMode(false);
+        window.toggleGlobeFollowMode();
+        window.toggleGlobeRotation();
+        setIsAutoRotating(true);
+      }
     }
-  }, []);
+  }, [isAutoRotating, isFollowMode]);
+
+  const getGlobeModeText = () => {
+    if (isAutoRotating) return 'rotating';
+    if (isFollowMode) return 'following';
+    return 'paused';
+  };
 
   return (
     <div className="app">
-      <GlobeComponent />
+      <GlobeComponent isFollowMode={isFollowMode} />
       <div className="stats-overlay">
         <StatsTable stats={stats} />
       </div>
@@ -93,12 +120,14 @@ function App() {
           onClick={handleButtonPress}
           onAnimationStart={handleAnimationStart}
         />
-        <button
-          onClick={handleRotationToggle}
-          className="mt-2 text-white/70 text-sm hover:text-white transition-colors duration-300"
-        >
-          {isAutoRotating ? 'pause rotation' : 'resume rotation'}
-        </button>
+        <div className="flex flex-col items-center gap-2 mt-2">
+          <button
+            onClick={handleGlobeModeToggle}
+            className="text-white/70 text-sm hover:text-white transition-colors duration-300"
+          >
+            globe: {getGlobeModeText()}
+          </button>
+        </div>
       </div>
       {isAnimating && (
         <Particles 

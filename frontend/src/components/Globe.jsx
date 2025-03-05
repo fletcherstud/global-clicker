@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Globe from 'globe.gl'
 import './Globe.css'
 
-function GlobeComponent() {
+function GlobeComponent({ isFollowMode }) {
   const globeEl = useRef()
   const [lastPressLocation, setLastPressLocation] = useState(null)
   const [arcs, setArcs] = useState([])
@@ -11,11 +11,73 @@ function GlobeComponent() {
   const pressQueueRef = useRef([])
   const isProcessingRef = useRef(false)
   const animationTimeoutRef = useRef(null)
+  const cameraAnimationRef = useRef(null)
 
   // Function to toggle auto-rotation
   const toggleRotation = useCallback(() => {
     setIsAutoRotating(prev => !prev);
   }, []);
+
+  // Function to smoothly move camera to a point
+  const moveCamera = useCallback((lat, lng, altitude = 2.5, duration = 1000) => {
+    if (!window.globeInstance) return;
+    
+    const globe = window.globeInstance;
+    const startTime = Date.now();
+    const startPos = globe.pointOfView();
+    
+    // Cancel any ongoing camera animation
+    if (cameraAnimationRef.current) {
+      cancelAnimationFrame(cameraAnimationRef.current);
+    }
+
+    const animate = () => {
+      const progress = Math.min(1, (Date.now() - startTime) / duration);
+      // Ease function (cubic-bezier)
+      const ease = t => t < .5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1;
+      const easedProgress = ease(progress);
+
+      globe.pointOfView({
+        lat: startPos.lat + (lat - startPos.lat) * easedProgress,
+        lng: startPos.lng + (lng - startPos.lng) * easedProgress,
+        altitude: startPos.altitude + (altitude - startPos.altitude) * easedProgress
+      });
+
+      if (progress < 1) {
+        cameraAnimationRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animate();
+  }, []);
+
+  // Function to toggle follow mode
+  const toggleFollowMode = useCallback(() => {
+    if (isFollowMode) {
+      // When follow mode is enabled, move to the current location
+      const currentLocation = pressQueueRef.current.length > 0 
+        ? pressQueueRef.current[0] 
+        : lastPressLocation;
+      
+      if (currentLocation) {
+        moveCamera(currentLocation.lat, currentLocation.lng);
+      }
+    }
+  }, [isFollowMode, lastPressLocation, moveCamera]);
+
+  // Handle follow mode state changes
+  useEffect(() => {
+    if (isFollowMode) {
+      // When follow mode is enabled, move to the current location
+      const currentLocation = pressQueueRef.current.length > 0 
+        ? pressQueueRef.current[0] 
+        : lastPressLocation;
+      
+      if (currentLocation) {
+        moveCamera(currentLocation.lat, currentLocation.lng);
+      }
+    }
+  }, [isFollowMode, lastPressLocation, moveCamera]);
 
   // Handle rotation state changes
   useEffect(() => {
@@ -27,10 +89,11 @@ function GlobeComponent() {
     }
   }, [isAutoRotating]);
 
-  // Expose toggle function to parent
+  // Expose toggle functions to parent
   useEffect(() => {
     window.toggleGlobeRotation = toggleRotation;
-  }, [toggleRotation]);
+    window.toggleGlobeFollowMode = toggleFollowMode;
+  }, [toggleRotation, toggleFollowMode]);
 
   // Function to fetch last button press from backend
   const fetchLastButtonPress = useCallback(async () => {
@@ -124,7 +187,6 @@ function GlobeComponent() {
       console.log('Queue empty, stopping processing');
       isProcessingRef.current = false;
       setArcs([]); // Clear any arcs
-      // Point will be shown automatically by the useEffect when queue is empty
       return;
     }
 
@@ -138,7 +200,10 @@ function GlobeComponent() {
         console.log('First press, setting initial location');
         setArcs([]); // Clear any arcs
         
-        // Remove first item and continue processing after a delay
+        if (isFollowMode) {
+          moveCamera(nextLocation.lat, nextLocation.lng);
+        }
+
         setTimeout(() => {
           pressQueueRef.current = pressQueueRef.current.slice(1);
           if (pressQueueRef.current.length > 0) {
@@ -146,7 +211,7 @@ function GlobeComponent() {
           } else {
             isProcessingRef.current = false;
           }
-        }, 500); // Short delay for first press
+        }, 500);
 
         return nextLocation;
       }
@@ -159,7 +224,6 @@ function GlobeComponent() {
         nextLocation.lng
       );
 
-      // Calculate animation duration based on distance
       const animDuration = getAnimationDuration(
         prevLocation.lat,
         prevLocation.lng,
@@ -176,18 +240,31 @@ function GlobeComponent() {
         animationDuration: animDuration
       };
 
+      if (isFollowMode) {
+        // Calculate midpoint for camera position
+        const midLat = (prevLocation.lat + nextLocation.lat) / 2;
+        const midLng = (prevLocation.lng + nextLocation.lng) / 2;
+        // Position camera slightly higher than the arc
+        const cameraAltitude = altitude * 1.5 + 1;
+        
+        moveCamera(midLat, midLng, cameraAltitude, animDuration / 2);
+        
+        // Schedule camera movement to end point
+        setTimeout(() => {
+          moveCamera(nextLocation.lat, nextLocation.lng, 2.5, animDuration / 2);
+        }, animDuration / 2);
+      }
+
       console.log('Creating new arc:', newArc, 'animation duration:', animDuration);
       setArcs([newArc]);
 
-      // Clear any existing timeout
       if (animationTimeoutRef.current) {
         clearTimeout(animationTimeoutRef.current);
       }
       
-      // Schedule next animation
       animationTimeoutRef.current = setTimeout(() => {
         console.log('Animation complete, removing from queue');
-        setArcs([]); // Clear the arc immediately after animation
+        setArcs([]);
         pressQueueRef.current = pressQueueRef.current.slice(1);
         
         if (pressQueueRef.current.length > 0) {
@@ -196,11 +273,11 @@ function GlobeComponent() {
           console.log('Queue processed completely');
           isProcessingRef.current = false;
         }
-      }, animDuration + 100); // Add small buffer for cleanup
+      }, animDuration + 100);
 
       return nextLocation;
     });
-  }, []);
+  }, [isFollowMode, moveCamera]);
 
   const handleNewPress = useCallback((data) => {
     const coords = extractCoordinates(data);
