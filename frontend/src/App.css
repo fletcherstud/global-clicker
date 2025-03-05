@@ -23,6 +23,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 1;
 }
 
 .stats-overlay {
@@ -36,4 +37,19 @@ body {
 .globe-container > div {
   width: 100%;
   height: 100%;
+}
+
+.button-container {
+  position: fixed;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.button-container > * {
+  pointer-events: auto;
 }
