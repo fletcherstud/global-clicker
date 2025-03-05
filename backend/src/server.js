@@ -51,9 +51,21 @@ mongoose.connection.on('disconnected', () => {
 // Initial connection
 connectDB();
 
+// Track connected sockets with a Set for more accurate counting
+const connectedSockets = new Set();
+
 // Socket.io connection handling
 io.on('connection', async (socket) => {
   console.log('New client connected');
+  
+  // Add socket to tracking set and broadcast updated count
+  connectedSockets.add(socket.id);
+  io.emit('connectedUsers', connectedSockets.size);
+
+  // Handle request for current connected users count
+  socket.on('requestConnectedUsers', () => {
+    socket.emit('connectedUsers', connectedSockets.size);
+  });
 
   try {
     // Check MongoDB connection before sending initial stats
@@ -132,6 +144,15 @@ io.on('connection', async (socket) => {
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
+    // Remove socket from tracking set and broadcast updated count
+    connectedSockets.delete(socket.id);
+    io.emit('connectedUsers', connectedSockets.size);
+  });
+
+  // Handle errors and unexpected disconnects
+  socket.on('error', () => {
+    connectedSockets.delete(socket.id);
+    io.emit('connectedUsers', connectedSockets.size);
   });
 });
 

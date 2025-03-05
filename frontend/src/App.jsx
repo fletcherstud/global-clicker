@@ -3,6 +3,7 @@ import GlobeComponent from './components/Globe'
 import StatsTable from './components/StatsTable'
 import GlowButton from './components/GlowButton'
 import Particles from './components/Particles'
+import ConnectedUsers from './components/ConnectedUsers'
 import { socketService } from './services/socketService'
 import './App.css'
 
@@ -37,6 +38,7 @@ function App() {
   const [isFollowMode, setIsFollowMode] = useState(false);
   const [particleOrigin, setParticleOrigin] = useState({ x: 0, y: 0 });
   const [canPress, setCanPress] = useState(socketService.canPressButton());
+  const [connectedUsers, setConnectedUsers] = useState(1);
 
   useEffect(() => {
     // Connect to WebSocket server
@@ -44,6 +46,15 @@ function App() {
     
     // Set up stats listener
     socketService.onStatsUpdate(setStats);
+
+    // Set up connected users listener with validation
+    socketService.onConnectedUsersUpdate((count) => {
+      console.log('Setting connected users to:', count);
+      // Ensure we only set valid numbers and never go below 1
+      if (typeof count === 'number' && count >= 0) {
+        setConnectedUsers(Math.max(1, count));
+      }
+    });
 
     // Set up button press listener
     socketService.onButtonPress((data) => {
@@ -115,6 +126,9 @@ function App() {
 
   return (
     <div className="app">
+      <div className="connected-users-container">
+        <ConnectedUsers count={connectedUsers} />
+      </div>
       <GlobeComponent isFollowMode={isFollowMode} />
       <div className="stats-overlay">
         <StatsTable stats={stats} />

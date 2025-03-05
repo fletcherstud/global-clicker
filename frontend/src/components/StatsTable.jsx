@@ -6,36 +6,38 @@ function StatsTable({ stats }) {
   const totalClicks = Object.values(stats).reduce((sum, country) => sum + country, 0);
   
   return (
-    <div className="bg-black/40 backdrop-blur-lg rounded-xl p-4 shadow-lg border border-white/20">
-      <div className="flex flex-col gap-3 mb-4">
-        <h2 className={`text-lg font-medium ${styles.statsText}`}>Global Button Presses</h2>
-        <div className="flex items-baseline gap-2">
-          <span className={`text-2xl font-semibold ${styles.statsText}`}>
-            {totalClicks.toLocaleString()}
-          </span>
-          <span className={`text-sm ${styles.statsText}`}>Total Clicks</span>
+    <div className="bg-black/30 backdrop-blur-md rounded-2xl p-5 shadow-2xl border border-white/10">
+      <div className="flex flex-col gap-3">
+        {/* Header Section - More compact */}
+        <div className="border-b border-white/10 pb-3">
+          <div className="flex items-baseline gap-3">
+            <span className={`text-2xl font-light ${styles.statsText}`}>
+              {totalClicks.toLocaleString()}
+            </span>
+            <span className={`text-sm font-light tracking-wider text-white/70 ${styles.statsText}`}>
+            {" "} Global Clicks
+            </span>
+          </div>
         </div>
-      </div>
-      
-      <div className="overflow-x-auto max-h-[60vh]">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className={`py-2 px-3 text-left border-b border-white/20 font-medium text-sm ${styles.statsText}`}>Country</th>
-              <th className={`py-2 px-3 text-left border-b border-white/20 font-medium text-sm ${styles.statsText}`}>Clicks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(stats)
-              .sort(([, a], [, b]) => b - a)
-              .map(([country, clicks]) => (
-                <tr key={country} className="hover:bg-white/10 transition-colors">
-                  <td className={`py-2 px-3 text-sm ${styles.statsText}`}>{country}</td>
-                  <td className={`py-2 px-3 text-sm ${styles.statsText}`}>{clicks.toLocaleString()}</td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
+
+        {/* Stats Grid - More compact */}
+        <div className="grid gap-2 max-h-[30vh] overflow-y-auto pr-2">
+          {Object.entries(stats)
+            .sort(([, a], [, b]) => b - a)
+            .map(([country, clicks]) => (
+              <div 
+                key={country}
+                className="flex justify-between items-center group"
+              >
+                <span className={`text-sm font-light text-white/70 group-hover:text-white/90 transition-colors ${styles.statsText}`}>
+                  {country} {" "}
+                </span>
+                <span className={`text-sm font-medium text-white/90 ${styles.statsText}`}>
+                  {clicks.toLocaleString()}
+                </span>
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ class SocketService {
     this.socket = null;
     this.statsCallback = null;
     this.buttonPressCallback = null;
+    this.connectedUsersCallback = null;
+    this.isConnected = false;
     
     // Get existing clientId from localStorage or generate a new one
     let storedClientId = localStorage.getItem('globalClickerClientId');
@@ -19,15 +21,45 @@ class SocketService {
   }
 
   connect() {
-    this.socket = io('http://localhost:5001');
+    if (this.socket) {
+      return; // Already connected or connecting
+    }
+
+    this.socket = io('http://localhost:5001', {
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
 
     this.socket.on('connect', () => {
       console.log('Connected to WebSocket server');
+      this.isConnected = true;
+      // Request current connected users count on connection
+      this.socket.emit('requestConnectedUsers');
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from WebSocket server');
+      this.isConnected = false;
+    });
+
+    this.socket.on('reconnect', () => {
+      console.log('Reconnected to WebSocket server');
+      this.isConnected = true;
+      // Request current connected users count on reconnection
+      this.socket.emit('requestConnectedUsers');
     });
 
     this.socket.on('initialStats', (stats) => {
       if (this.statsCallback) {
         this.statsCallback(this.formatStats(stats));
+      }
+    });
+
+    this.socket.on('connectedUsers', (count) => {
+      console.log('Received connected users update:', count);
+      if (this.connectedUsersCallback) {
+        this.connectedUsersCallback(count);
       }
     });
 
@@ -65,6 +97,10 @@ class SocketService {
 
   onButtonPress(callback) {
     this.buttonPressCallback = callback;
+  }
+
+  onConnectedUsersUpdate(callback) {
+    this.connectedUsersCallback = callback;
   }
 
   canPressButton() {

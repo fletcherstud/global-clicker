@@ -28,10 +28,17 @@ body {
 
 .stats-overlay {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  bottom: 40px;
+  left: 40px;
   z-index: 10;
-  width: 400px;
+  width: 300px;
+}
+
+.connected-users-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
 }
 
 .globe-container > div {
