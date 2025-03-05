@@ -57,8 +57,8 @@ function GlobeComponent() {
       controls.enablePan = false;
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.7;
-      controls.minPolarAngle = Math.PI / 2;
-      controls.maxPolarAngle = Math.PI / 2;
+      controls.minPolarAngle = Math.PI / 2.5;
+      controls.maxPolarAngle = Math.PI / 1.8;
 
       // Center the globe
       globe.pointOfView({ lat: 0, lng: 0, altitude: 2.5 });
