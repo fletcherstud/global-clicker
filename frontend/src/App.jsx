@@ -28,11 +28,19 @@ function App() {
     if (!isAnimating) {
       // In a real app, you would get the actual country from geolocation
       // For now, using US as example
-      socketService.emitButtonPress({
+      const pressData = {
         country: 'United States',
         latitude: 37.7749,
         longitude: -122.4194
-      });
+      };
+
+      // Emit to server
+      socketService.emitButtonPress(pressData);
+
+      // Update globe visualization
+      if (window.handleNewPress) {
+        window.handleNewPress(pressData);
+      }
     }
   }, [isAnimating]);
 

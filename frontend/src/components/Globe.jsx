@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Globe from 'globe.gl'
 import './Globe.css'
 
 function GlobeComponent() {
   const globeEl = useRef()
+  const [lastPressLocation, setLastPressLocation] = useState(null)
+  const [arcs, setArcs] = useState([])
 
   useEffect(() => {
     let globe;
@@ -12,33 +14,22 @@ function GlobeComponent() {
     // Initialize after a small delay to ensure DOM is ready
     setTimeout(() => {
       globe = Globe()(globeEl.current)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .backgroundImageUrl(null)
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .backgroundImageUrl(null)
         .width(window.innerWidth)
         .height(window.innerHeight)
         .backgroundColor('#000000')
-        .atmosphereColor('white')
+        .atmosphereColor('#ffffff')
         .atmosphereAltitude(0.15)
         .pointColor(() => '#fff')
         .pointRadius(0.12)
         .pointAltitude(0)
         .pointsMerge(true)
-        .pointsData([
-          { lat: 37.7749, lng: -122.4194 },
-          { lat: 40.7128, lng: -74.0060 },
-          { lat: 51.5074, lng: -0.1278 },
-          { lat: 35.6762, lng: 139.6503 }
-        ])
         .arcColor(() => '#fff')
         .arcDashLength(0.6)
         .arcDashGap(0.3)
         .arcDashAnimateTime(1500)
         .arcStroke(0.5)
-        .arcsData([
-          { startLat: 37.7749, startLng: -122.4194, endLat: 40.7128, endLng: -74.0060 },
-          { startLat: 40.7128, startLng: -74.0060, endLat: 51.5074, endLng: -0.1278 },
-          { startLat: 51.5074, startLng: -0.1278, endLat: 35.6762, endLng: 139.6503 }
-        ])
         .arcAltitude(0.2);
 
       // Handle window resize
@@ -62,6 +53,9 @@ function GlobeComponent() {
 
       // Center the globe
       globe.pointOfView({ lat: 0, lng: 0, altitude: 2.5 });
+
+      // Expose the globe instance to window for external access
+      window.globeInstance = globe;
     }, 100);
 
     // Cleanup
@@ -75,11 +69,57 @@ function GlobeComponent() {
     };
   }, []);
 
+  // Update arcs when new data comes in
+  useEffect(() => {
+    if (!window.globeInstance) return;
+
+    // Update points and arcs on the globe
+    window.globeInstance
+      .pointsData(lastPressLocation ? [lastPressLocation] : [])
+      .arcsData(arcs);
+  }, [arcs, lastPressLocation]);
+
+  // Handle new button press
+  const handleNewPress = (data) => {
+    const newLocation = {
+      lat: data.latitude,
+      lng: data.longitude,
+      name: data.country
+    };
+
+    if (lastPressLocation) {
+      // Create new arc
+      const newArc = {
+        startLat: lastPressLocation.lat,
+        startLng: lastPressLocation.lng,
+        endLat: newLocation.lat,
+        endLng: newLocation.lng
+      };
+
+      // Update arcs state
+      setArcs(prevArcs => {
+        // Keep only the last 10 arcs to prevent performance issues
+        const updatedArcs = [...prevArcs, newArc].slice(-10);
+        return updatedArcs;
+      });
+    }
+
+    // Update last press location
+    setLastPressLocation(newLocation);
+  };
+
+  // Expose handleNewPress to parent component
+  useEffect(() => {
+    if (window) {
+      window.handleNewPress = handleNewPress;
+    }
+  }, [lastPressLocation]);
+
   return (
     <div className="globe-container">
       <div ref={globeEl} />
     </div>
-  )
+  );
 }
 
-export default GlobeComponent 
+export default GlobeComponent; 
