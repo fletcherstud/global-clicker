@@ -6,10 +6,31 @@ function GlobeComponent() {
   const globeEl = useRef()
   const [lastPressLocation, setLastPressLocation] = useState(null)
   const [arcs, setArcs] = useState([])
+  const [isAutoRotating, setIsAutoRotating] = useState(true)
   const handleServerButtonPressRef = useRef(null)
   const pressQueueRef = useRef([])
   const isProcessingRef = useRef(false)
   const animationTimeoutRef = useRef(null)
+
+  // Function to toggle auto-rotation
+  const toggleRotation = useCallback(() => {
+    setIsAutoRotating(prev => !prev);
+  }, []);
+
+  // Handle rotation state changes
+  useEffect(() => {
+    if (window.globeInstance) {
+      const controls = window.globeInstance.controls();
+      if (controls) {
+        controls.autoRotate = isAutoRotating;
+      }
+    }
+  }, [isAutoRotating]);
+
+  // Expose toggle function to parent
+  useEffect(() => {
+    window.toggleGlobeRotation = toggleRotation;
+  }, [toggleRotation]);
 
   // Function to fetch last button press from backend
   const fetchLastButtonPress = useCallback(async () => {
@@ -227,13 +248,13 @@ function GlobeComponent() {
           console.log('Point hovered:', point);
           const controls = window.globeInstance.controls();
           if (controls) {
-            controls.autoRotate = !point; // pause rotation when hovering over point
+            controls.autoRotate = !point && isAutoRotating; // Only auto-rotate if enabled and not hovering
           }
         })
         .arcColor(() => '#fff')
         .arcDashLength(1)
         .arcDashGap(1)
-        .arcDashAnimateTime(d => d.animationDuration) // Use dynamic animation duration
+        .arcDashAnimateTime(d => d.animationDuration)
         .arcStroke(0.5)
         .arcAltitudeAutoScale(false)
         .arcAltitude(d => d.altitude || 0.5);
@@ -252,7 +273,7 @@ function GlobeComponent() {
       const controls = globe.controls();
       controls.enableZoom = false;
       controls.enablePan = false;
-      controls.autoRotate = true;
+      controls.autoRotate = isAutoRotating;
       controls.autoRotateSpeed = 0.7;
       controls.minPolarAngle = Math.PI / 2.5;
       controls.maxPolarAngle = Math.PI / 1.8;
@@ -278,7 +299,7 @@ function GlobeComponent() {
         globe._destructor();
       }
     };
-  }, [fetchLastButtonPress]);
+  }, [fetchLastButtonPress]); // Remove isAutoRotating from dependencies
 
   // Update arcs when new data comes in
   useEffect(() => {

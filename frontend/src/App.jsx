@@ -33,6 +33,7 @@ const getRandomCoordinates = () => {
 function App() {
   const [stats, setStats] = useState({});
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
   const [particleOrigin, setParticleOrigin] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -74,6 +75,13 @@ function App() {
     }, 2000);
   }, []);
 
+  const handleRotationToggle = useCallback(() => {
+    if (window.toggleGlobeRotation) {
+      window.toggleGlobeRotation();
+      setIsAutoRotating(prev => !prev);
+    }
+  }, []);
+
   return (
     <div className="app">
       <GlobeComponent />
@@ -85,6 +93,12 @@ function App() {
           onClick={handleButtonPress}
           onAnimationStart={handleAnimationStart}
         />
+        <button
+          onClick={handleRotationToggle}
+          className="mt-2 text-white/70 text-sm hover:text-white transition-colors duration-300"
+        >
+          {isAutoRotating ? 'pause rotation' : 'resume rotation'}
+        </button>
       </div>
       {isAnimating && (
         <Particles 
