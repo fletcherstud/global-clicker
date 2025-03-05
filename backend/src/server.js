@@ -145,6 +145,27 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+app.get('/api/lastButtonPress', async (req, res) => {
+  try {
+    const lastPress = await ButtonPress.findOne()
+      .sort('-pressedAt')
+      .select('country location pressedAt');
+    
+    if (!lastPress) {
+      return res.status(404).json({ error: 'No button presses found' });
+    }
+
+    res.json({
+      country: lastPress.country,
+      location: lastPress.location,
+      timestamp: lastPress.pressedAt
+    });
+  } catch (error) {
+    console.error('Error fetching last button press:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/api/recent-presses', async (req, res) => {
   try {
     const recentPresses = await ButtonPress.find()

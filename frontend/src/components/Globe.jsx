@@ -11,6 +11,29 @@ function GlobeComponent() {
   const isProcessingRef = useRef(false)
   const animationTimeoutRef = useRef(null)
 
+  // Function to fetch last button press from backend
+  const fetchLastButtonPress = useCallback(async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/lastButtonPress');
+      const data = await response.json();
+      console.log('Last button press:', data);
+      if (data) {
+        const coords = extractCoordinates(data);
+        if (coords && isValidCoordinate(coords.lat, coords.lng)) {
+          const location = {
+            lat: coords.lat,
+            lng: coords.lng,
+            name: data.country,
+            timestamp: data.timestamp
+          };
+          setLastPressLocation(location);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching last button press:', error);
+    }
+  }, []);
+
   // Helper function to calculate distance between two points
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
     const R = 6371; // Earth's radius in km
@@ -168,7 +191,8 @@ function GlobeComponent() {
     const newLocation = {
       lat: coords.lat,
       lng: coords.lng,
-      name: data.country
+      name: data.country,
+      timestamp: data.timestamp // Use timestamp from server data
     };
 
     console.log('Adding new press to queue:', newLocation);
@@ -238,6 +262,9 @@ function GlobeComponent() {
 
       // Expose the globe instance to window for external access
       window.globeInstance = globe;
+
+      // Fetch last button press after globe is initialized
+      fetchLastButtonPress();
     }, 100);
 
     return () => {
@@ -251,14 +278,16 @@ function GlobeComponent() {
         globe._destructor();
       }
     };
-  }, []);
+  }, [fetchLastButtonPress]);
 
   // Update arcs when new data comes in
   useEffect(() => {
+    console.log("HERE")
     if (!window.globeInstance) return;
-
+    console.log("HERE2")
     // Only update if we have valid coordinates
     if (lastPressLocation && isValidCoordinate(lastPressLocation.lat, lastPressLocation.lng)) {
+      console.log('Updating globe with last press location:', lastPressLocation);
       window.globeInstance
         .pointsData(pressQueueRef.current.length === 0 ? [lastPressLocation] : []) // Only show point when queue is empty
         .pointAltitude(.15)
