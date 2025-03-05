@@ -1,6 +1,6 @@
-# I Am His - Real-time Global Follower Map
+# Global Clicker
 
-An interactive web application that displays a real-time 3D globe showing locations of people declaring themselves as followers of Christ.
+An interactive web application featuring a 3D globe that visualizes button clicks from around the world in real-time.
 
 ## Features
 
@@ -68,7 +68,7 @@ An interactive web application that displays a real-time 3D globe showing locati
 ## Project Structure
 
 ```
-iamhis/
+global-clicker/
 ├── frontend/           # React frontend application
 │   ├── src/
 │   ├── public/
