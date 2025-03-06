@@ -325,7 +325,7 @@ function GlobeComponent({ isFollowMode }) {
           console.log('Point hovered:', point);
           const controls = window.globeInstance.controls();
           if (controls) {
-            controls.autoRotate = !point && isAutoRotating; // Only auto-rotate if enabled and not hovering
+            controls.autoRotate = !point && isAutoRotating;
           }
         })
         .arcColor(() => '#fff')
@@ -338,14 +338,29 @@ function GlobeComponent({ isFollowMode }) {
 
       // Handle window resize
       handleResize = () => {
-        globe.width(window.innerWidth)
-          .height(window.innerHeight);
+        const containerWidth = globeEl.current.clientWidth;
+        const containerHeight = globeEl.current.clientHeight;
+        // Make globe large but ensure it doesn't get cut off
+        const size = Math.min(containerWidth, containerHeight) * 1.4;
+        
+        // Center the globe in the container
+        const marginLeft = (containerWidth - size) / 2;
+        const marginTop = (containerHeight - size) / 2;
+        
+        globeEl.current.style.margin = `${marginTop}px ${marginLeft}px`;
+        
+        globe
+          .width(size)
+          .height(size);
       };
+
+      // Initial size setup
+      handleResize();
       window.addEventListener('resize', handleResize);
 
       // Set initial camera position and controls
-      globe.camera().position.set(0, 0, 400);
-      
+      globe.camera().position.set(0, 0, 200); // Adjusted camera distance
+
       // Configure controls for smoother interaction
       const controls = globe.controls();
       controls.enableZoom = false;
@@ -356,7 +371,7 @@ function GlobeComponent({ isFollowMode }) {
       controls.maxPolarAngle = Math.PI / 1.8;
 
       // Center the globe
-      globe.pointOfView({ lat: 0, lng: 0, altitude: 2.5 });
+      globe.pointOfView({ lat: 0, lng: 0, altitude: 1.7 }); // Adjusted altitude
 
       // Expose the globe instance to window for external access
       window.globeInstance = globe;
@@ -376,7 +391,7 @@ function GlobeComponent({ isFollowMode }) {
         globe._destructor();
       }
     };
-  }, [fetchLastButtonPress]); // Remove isAutoRotating from dependencies
+  }, [fetchLastButtonPress]);
 
   // Update arcs when new data comes in
   useEffect(() => {

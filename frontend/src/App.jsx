@@ -9,7 +9,7 @@ import { socketService } from './services/socketService'
 import './App.css'
 
 // Development flag
-const USE_DUMMY_DATA = false;
+const USE_DUMMY_DATA = true;
 
 // Helper function to generate random coordinates
 const getRandomCoordinates = () => {

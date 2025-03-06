@@ -7,6 +7,7 @@
 body {
   background-color: #000000;
   overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app {
@@ -23,11 +24,17 @@ body {
 
 .globe-container {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75vw;
+  height: 75vw;
+  max-width: 75vh;
+  max-height: 75vh;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .stats-overlay {
@@ -42,6 +49,7 @@ body {
   padding: 15px;
   backdrop-filter: blur(5px);
   color: white;
+  font-size: 0.9rem;
 }
 
 .connected-users-container {
@@ -51,6 +59,7 @@ body {
   z-index: 10;
   pointer-events: none;
   color: white;
+  font-size: 1rem;
 }
 
 .last-press-container {
@@ -59,6 +68,7 @@ body {
   right: 40px;
   z-index: 10;
   color: white;
+  font-size: 0.9rem;
 }
 
 .globe-container > div {
@@ -94,12 +104,18 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   backdrop-filter: blur(5px);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .button-container .glow-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.05);
+}
+
+.button-container .glow-button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .button-container .glow-button:disabled {
@@ -126,11 +142,17 @@ body {
   cursor: pointer;
   transition: all 0.3s ease;
   margin: 0 auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .globe-mode-button:hover {
   color: white;
   background: rgba(255, 255, 255, 0.15);
+}
+
+.globe-mode-button:active {
+  transform: scale(0.98);
 }
 
 .status-message {
@@ -153,4 +175,110 @@ body {
   background: rgba(255, 193, 7, 0.2);
   border: 1px solid rgba(255, 193, 7, 0.3);
   color: #ffd166;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .globe-container {
+    width: 81.25vw;
+    height: 81.25vw;
+    max-width: 81.25vh;
+    max-height: 81.25vh;
+  }
+
+  .stats-overlay {
+    bottom: unset;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.8rem;
+    max-height: 200px;
+    padding: 12px;
+    width: 90%;
+    max-width: 400px;
+  }
+
+  .connected-users-container {
+    top: 20px;
+    left: 20px;
+    font-size: 0.9rem;
+  }
+
+  .last-press-container {
+    bottom: unset;
+    top: 20px;
+    right: 20px;
+    font-size: 0.8rem;
+  }
+
+  .button-container {
+    bottom: 20px;
+    padding: 0 16px;
+  }
+
+  .button-container .glow-button {
+    padding: 14px 28px;
+    font-size: 1.1rem;
+  }
+
+  .globe-mode-button {
+    padding: 10px 20px;
+    font-size: 0.85rem;
+  }
+
+  .status-message {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+}
+
+/* Small phones */
+@media (max-width: 380px) {
+  .globe-container {
+    width: 75vw;
+    height: 75vw;
+    max-width: 75vh;
+    max-height: 75vh;
+  }
+
+  .stats-overlay {
+    top: 60px;
+    font-size: 0.75rem;
+    padding: 10px;
+    width: 95%;
+    max-width: 350px;
+  }
+
+  .connected-users-container {
+    top: 15px;
+    left: 15px;
+    font-size: 0.85rem;
+  }
+
+  .last-press-container {
+    bottom: unset;
+    top: 15px;
+    right: 15px;
+    font-size: 0.75rem;
+  }
+
+  .button-container {
+    bottom: 15px;
+    padding: 0 12px;
+  }
+
+  .button-container .glow-button {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+
+  .globe-mode-button {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+  }
+
+  .status-message {
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
 }
