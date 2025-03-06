@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 class SocketService {
   constructor() {
     this.socket = null;
@@ -25,10 +27,11 @@ class SocketService {
       return; // Already connected or connecting
     }
 
-    this.socket = io('http://localhost:5001', {
+    this.socket = io(API_URL, {
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnectionDelay: 1000,
+      transports: ['websocket', 'polling']
     });
 
     this.socket.on('connect', () => {

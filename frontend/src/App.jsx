@@ -8,8 +8,8 @@ import LastPress from './components/LastPress'
 import { socketService } from './services/socketService'
 import './App.css'
 
-// Development flag
-const USE_DUMMY_DATA = true;
+// Development flag from environment variables
+const USE_DUMMY_DATA = import.meta.env.VITE_USE_DUMMY_DATA === 'true';
 
 // Helper function to generate random coordinates
 const getRandomCoordinates = () => {
