@@ -4,6 +4,7 @@ import StatsTable from './components/StatsTable'
 import GlowButton from './components/GlowButton'
 import Particles from './components/Particles'
 import ConnectedUsers from './components/ConnectedUsers'
+import LastPress from './components/LastPress'
 import { socketService } from './services/socketService'
 import './App.css'
 
@@ -39,6 +40,27 @@ function App() {
   const [particleOrigin, setParticleOrigin] = useState({ x: 0, y: 0 });
   const [canPress, setCanPress] = useState(socketService.canPressButton());
   const [connectedUsers, setConnectedUsers] = useState(1);
+  const [lastPress, setLastPress] = useState(null);
+
+  // Fetch initial last press
+  useEffect(() => {
+    const fetchLastPress = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/lastButtonPress');
+        const data = await response.json();
+        if (data && !data.error) {
+          setLastPress({
+            country: data.country,
+            timestamp: data.timestamp
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching last press:', error);
+      }
+    };
+
+    fetchLastPress();
+  }, []);
 
   useEffect(() => {
     // Connect to WebSocket server
@@ -61,6 +83,12 @@ function App() {
       // Update can press state
       setCanPress(socketService.canPressButton());
       
+      // Update last press information
+      setLastPress({
+        country: data.country,
+        timestamp: data.pressedAt
+      });
+
       // Dispatch custom event for the Globe component
       window.dispatchEvent(new CustomEvent('serverButtonPress', {
         detail: data
@@ -128,6 +156,9 @@ function App() {
     <div className="app">
       <div className="connected-users-container">
         <ConnectedUsers count={connectedUsers} />
+      </div>
+      <div className="last-press-container">
+        <LastPress lastPress={lastPress} />
       </div>
       <GlobeComponent isFollowMode={isFollowMode} />
       <div className="stats-overlay">
