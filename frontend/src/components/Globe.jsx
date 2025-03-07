@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Globe from 'globe.gl'
 import './Globe.css'
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function GlobeComponent({ isFollowMode }) {
   const globeEl = useRef()
   const [lastPressLocation, setLastPressLocation] = useState(null)
@@ -98,7 +100,7 @@ function GlobeComponent({ isFollowMode }) {
   // Function to fetch last button press from backend
   const fetchLastButtonPress = useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/lastButtonPress');
+      const response = await fetch(`${API_URL}/api/lastButtonPress`);
       const data = await response.json();
       console.log('Last button press:', data);
       if (data) {

@@ -12,13 +12,29 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    methods: ["GET", "POST"]
+    origin: process.env.CORS_ORIGIN,
+    methods: ["GET", "POST"],
+    credentials: true,
+    transports: ['websocket', 'polling']
+  },
+  allowEIO3: true,
+  path: '/socket.io/',
+  handlePreflightRequest: (req, res) => {
+    res.writeHead(200, {
+      "Access-Control-Allow-Origin": process.env.CORS_ORIGIN,
+      "Access-Control-Allow-Methods": "GET,POST",
+      "Access-Control-Allow-Headers": "my-custom-header",
+      "Access-Control-Allow-Credentials": true
+    });
+    res.end();
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN,
+  credentials: true
+}));
 app.use(express.json());
 
 // MongoDB Connection with retry logic and production settings
@@ -32,10 +48,15 @@ const connectDB = async () => {
         strict: true,
         deprecationErrors: true,
       },
-      // Production-ready settings
+      // Production-ready settings with SSL/TLS
       maxPoolSize: 50,
       wtimeoutMS: 2500,
       retryWrites: true,
+      ssl: true,
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      tlsAllowInvalidHostnames: false,
+      directConnection: false
     });
     
     console.log('Connected to MongoDB Atlas');

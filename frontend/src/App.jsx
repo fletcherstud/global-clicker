@@ -11,6 +11,9 @@ import './App.css'
 // Development flag from environment variables
 const USE_DUMMY_DATA = import.meta.env.VITE_USE_DUMMY_DATA === 'true';
 
+// Import API_URL at the top
+const API_URL = import.meta.env.VITE_API_URL;
+
 // Helper function to generate random coordinates
 const getRandomCoordinates = () => {
   // Latitude: -90 to 90
@@ -97,7 +100,7 @@ function App() {
   useEffect(() => {
     const fetchLastPress = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/lastButtonPress');
+        const response = await fetch(`${API_URL}/api/lastButtonPress`);
         const data = await response.json();
         if (data && !data.error) {
           setLastPress({
