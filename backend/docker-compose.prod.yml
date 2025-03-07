@@ -8,7 +8,7 @@ services:
     container_name: globeclicker-backend-prod
     restart: always
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     environment:
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
@@ -19,4 +19,4 @@ services:
 
 networks:
   globeclicker-network-prod:
-    driver: bridge 
+    driver: bridge
