@@ -12,7 +12,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
@@ -21,16 +21,24 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection with retry logic
+// MongoDB Connection with retry logic and production settings
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/globalclicker', {
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
+      serverApi: {
+        version: '1',
+        strict: true,
+        deprecationErrors: true,
+      },
+      // Production-ready settings
+      maxPoolSize: 50,
+      wtimeoutMS: 2500,
+      retryWrites: true,
     });
-    console.log('Connected to MongoDB');
+    
+    console.log('Connected to MongoDB Atlas');
   } catch (err) {
     console.error('MongoDB connection error:', err);
     // Retry connection after 5 seconds

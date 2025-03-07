@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: globeclicker-backend-prod
+    restart: always
+    ports:
+      - "5001:5001"
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=${MONGODB_URI}
+      - PORT=5001
+      - CORS_ORIGIN=https://theglobalclicker.com
+    networks:
+      - globeclicker-network-prod
+
+networks:
+  globeclicker-network-prod:
+    driver: bridge 
