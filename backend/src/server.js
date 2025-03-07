@@ -36,6 +36,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // MongoDB Connection with retry logic and production settings
 const connectDB = async () => {
   try {
@@ -187,12 +193,6 @@ io.on('connection', async (socket) => {
 // API Routes
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Add request logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  next();
 });
 
 app.get('/api/stats', async (req, res) => {

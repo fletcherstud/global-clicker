@@ -102,7 +102,6 @@ function GlobeComponent({ isFollowMode }) {
     try {
       const response = await fetch(`${API_URL}/api/lastButtonPress`);
       const data = await response.json();
-      console.log('Last button press:', data);
       if (data) {
         const coords = extractCoordinates(data);
         if (coords && isValidCoordinate(coords.lat, coords.lng)) {
@@ -183,10 +182,7 @@ function GlobeComponent({ isFollowMode }) {
   };
 
   const processNextInQueue = useCallback(async () => {
-    console.log('Processing queue, length:', pressQueueRef.current.length);
-    
     if (pressQueueRef.current.length === 0) {
-      console.log('Queue empty, stopping processing');
       isProcessingRef.current = false;
       setArcs([]); // Clear any arcs
       return;
@@ -194,12 +190,10 @@ function GlobeComponent({ isFollowMode }) {
 
     isProcessingRef.current = true;
     const nextLocation = pressQueueRef.current[0];
-    console.log('Processing location:', nextLocation);
 
     setLastPressLocation(prevLocation => {
       // Handle first press differently
       if (!prevLocation || !isValidCoordinate(prevLocation.lat, prevLocation.lng)) {
-        console.log('First press, setting initial location');
         setArcs([]); // Clear any arcs
         
         if (isFollowMode) {
@@ -257,7 +251,6 @@ function GlobeComponent({ isFollowMode }) {
         }, animDuration / 2);
       }
 
-      console.log('Creating new arc:', newArc, 'animation duration:', animDuration);
       setArcs([newArc]);
 
       if (animationTimeoutRef.current) {
@@ -265,14 +258,12 @@ function GlobeComponent({ isFollowMode }) {
       }
       
       animationTimeoutRef.current = setTimeout(() => {
-        console.log('Animation complete, removing from queue');
         setArcs([]);
         pressQueueRef.current = pressQueueRef.current.slice(1);
         
         if (pressQueueRef.current.length > 0) {
           processNextInQueue();
         } else {
-          console.log('Queue processed completely');
           isProcessingRef.current = false;
         }
       }, animDuration + 100);
@@ -295,14 +286,10 @@ function GlobeComponent({ isFollowMode }) {
       timestamp: data.timestamp // Use timestamp from server data
     };
 
-    console.log('Adding new press to queue:', newLocation);
     pressQueueRef.current.push(newLocation);
 
     if (!isProcessingRef.current) {
-      console.log('Starting queue processing');
       processNextInQueue();
-    } else {
-      console.log('Queue is already being processed, items in queue:', pressQueueRef.current.length);
     }
   }, [processNextInQueue]);
 
@@ -324,7 +311,6 @@ function GlobeComponent({ isFollowMode }) {
         .pointAltitude(0)
         .pointsMerge(false)
         .onPointHover(point => {
-          console.log('Point hovered:', point);
           const controls = window.globeInstance.controls();
           if (controls) {
             controls.autoRotate = !point && isAutoRotating;
@@ -397,12 +383,9 @@ function GlobeComponent({ isFollowMode }) {
 
   // Update arcs when new data comes in
   useEffect(() => {
-    console.log("HERE")
     if (!window.globeInstance) return;
-    console.log("HERE2")
     // Only update if we have valid coordinates
     if (lastPressLocation && isValidCoordinate(lastPressLocation.lat, lastPressLocation.lng)) {
-      console.log('Updating globe with last press location:', lastPressLocation);
       window.globeInstance
         .pointsData(pressQueueRef.current.length === 0 ? [lastPressLocation] : []) // Only show point when queue is empty
         .pointAltitude(.15)

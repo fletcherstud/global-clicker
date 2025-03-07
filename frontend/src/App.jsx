@@ -81,7 +81,6 @@ function App() {
             longitude: position.coords.longitude,
             country: getCountryFromCoordinates(position.coords.latitude, position.coords.longitude)
           };
-          console.log('Real location data:', location);
           setUserLocation(location);
           setIsRequestingLocation(false);
           resolve(location);
@@ -125,7 +124,6 @@ function App() {
 
     // Set up connected users listener with validation
     socketService.onConnectedUsersUpdate((count) => {
-      console.log('Setting connected users to:', count);
       // Ensure we only set valid numbers and never go below 1
       if (typeof count === 'number' && count >= 0) {
         setConnectedUsers(Math.max(1, count));

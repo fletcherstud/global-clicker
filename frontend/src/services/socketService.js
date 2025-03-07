@@ -35,19 +35,16 @@ class SocketService {
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to WebSocket server');
       this.isConnected = true;
       // Request current connected users count on connection
       this.socket.emit('requestConnectedUsers');
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
       this.isConnected = false;
     });
 
     this.socket.on('reconnect', () => {
-      console.log('Reconnected to WebSocket server');
       this.isConnected = true;
       // Request current connected users count on reconnection
       this.socket.emit('requestConnectedUsers');
@@ -60,7 +57,6 @@ class SocketService {
     });
 
     this.socket.on('connectedUsers', (count) => {
-      console.log('Received connected users update:', count);
       if (this.connectedUsersCallback) {
         this.connectedUsersCallback(count);
       }
