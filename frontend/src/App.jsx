@@ -6,6 +6,8 @@ import Particles from './components/Particles'
 import ConnectedUsers from './components/ConnectedUsers'
 import LastPress from './components/LastPress'
 import { socketService } from './services/socketService'
+import { TurnstileProvider } from './components/TurnstileContext'
+import { TurnstileModal } from './components/TurnstileModal'
 import './App.css'
 
 // Development flag from environment variables
@@ -156,6 +158,9 @@ function App() {
   const handleButtonPress = useCallback(async () => {
     if (!isAnimating && canPress) {
       try {
+        // Increment request count in Turnstile context
+        socketService.incrementTurnstileRequest();
+        
         // In development mode, get and log real location but use dummy data for the press
         if (USE_DUMMY_DATA) {
           // Get real location for logging
@@ -225,56 +230,56 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <div className="connected-users-container">
-        <ConnectedUsers count={connectedUsers} />
-      </div>
-      <div className="last-press-container">
-        <LastPress lastPress={lastPress} />
-      </div>
-      <div className="globe-container">
-        <GlobeComponent isFollowMode={isFollowMode} />
-      </div>
-      <div className="stats-overlay">
-        <StatsTable stats={stats} />
-      </div>
-      <div className="button-container">
-        <GlowButton 
-          onClick={handleButtonPress}
-          onAnimationStart={handleAnimationStart}
-          disabled={!canPress || isAnimating || isRequestingLocation}
-          className="glow-button"
-        >
-          {isRequestingLocation ? 'Requesting Location...' : 'Press Me'}
-        </GlowButton>
-        <div className="controls-group">
-          <button
-            onClick={handleGlobeModeToggle}
-            className="globe-mode-button"
-          >
-            globe: {getGlobeModeText()}
-          </button>
-          {locationError && (
-            <div className="status-message error">
-              {locationError.includes('denied') 
-                ? 'Please enable location access to continue'
-                : locationError}
-            </div>
-          )}
-          {USE_DUMMY_DATA && (
-            <div className="status-message warning">
-              Using dummy location data
-            </div>
-          )}
+    <TurnstileProvider>
+      <div className="app">
+        <TurnstileModal />
+        <div className="connected-users-container">
+          <ConnectedUsers count={connectedUsers} />
         </div>
+        <div className="last-press-container">
+          <LastPress lastPress={lastPress} />
+        </div>
+        <div className="globe-container">
+          <GlobeComponent isFollowMode={isFollowMode} />
+        </div>
+        <div className="stats-overlay">
+          <StatsTable stats={stats} />
+        </div>
+        <div className="button-container">
+          <GlowButton 
+            onClick={handleButtonPress}
+            onAnimationStart={handleAnimationStart}
+            disabled={!canPress || isAnimating || isRequestingLocation}
+            className="glow-button"
+          >
+            {isRequestingLocation ? 'Requesting Location...' : 'Press Me'}
+          </GlowButton>
+          <div className="controls-group">
+            <button
+              onClick={handleGlobeModeToggle}
+              className="globe-mode-button"
+            >
+              globe: {getGlobeModeText()}
+            </button>
+            {locationError && (
+              <div className="status-message error">
+                {locationError.includes('denied') 
+                  ? 'Please enable location access to continue'
+                  : locationError}
+              </div>
+            )}
+            {USE_DUMMY_DATA && (
+              <div className="status-message warning">
+                Using dummy location data
+              </div>
+            )}
+          </div>
+        </div>
+        {isAnimating && (
+          <Particles origin={particleOrigin} />
+        )}
       </div>
-      {isAnimating && (
-        <Particles 
-          isAnimating={isAnimating}
-          buttonPosition={particleOrigin}
-        />
-      )}
-    </div>
+    </TurnstileProvider>
   )
 }
 

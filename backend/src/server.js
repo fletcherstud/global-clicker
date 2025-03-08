@@ -3,6 +3,9 @@ const http = require('http');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const turnstileMiddleware = require('./middleware/turnstileVerification');
 require('dotenv').config();
 
 const ButtonPress = require('./models/ButtonPress');
@@ -10,6 +13,26 @@ const CountryStats = require('./models/CountryStats');
 
 const app = express();
 const server = http.createServer(app);
+
+// Session configuration
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'your-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 24 * 60 * 60, // Session TTL (1 day)
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day
+  }
+});
+
+// Apply session middleware to express
+app.use(sessionMiddleware);
+
 const io = socketIo(server, {
   cors: {
     origin: process.env.CORS_ORIGIN,
@@ -27,6 +50,11 @@ const io = socketIo(server, {
     });
     res.end();
   }
+});
+
+// Share session between Express and Socket.IO
+io.use((socket, next) => {
+  sessionMiddleware(socket.request, {}, next);
 });
 
 // Middleware
@@ -116,6 +144,40 @@ io.on('connection', async (socket) => {
   }
 
   socket.on('buttonPress', async (data) => {
+    // Verify Turnstile token
+    if (!socket.request.session?.turnstileVerified) {
+      const token = data.turnstileToken;
+      if (!token) {
+        socket.emit('error', { 
+          message: 'Verification required',
+          needsVerification: true
+        });
+        return;
+      }
+
+      try {
+        const verification = await verifyTurnstileToken(token);
+        if (!verification.success) {
+          socket.emit('error', { 
+            message: 'Verification failed',
+            needsVerification: true
+          });
+          return;
+        }
+        // Store verification in session
+        socket.request.session.turnstileVerified = true;
+        socket.request.session.turnstileVerifiedAt = verification.challengeTs;
+        await socket.request.session.save();
+      } catch (error) {
+        console.error('Turnstile verification error:', error);
+        socket.emit('error', { 
+          message: 'Verification failed',
+          needsVerification: true
+        });
+        return;
+      }
+    }
+
     // Check MongoDB connection before processing
     if (mongoose.connection.readyState !== 1) {
       socket.emit('error', { message: 'Database connection error' });
@@ -130,7 +192,7 @@ io.on('connection', async (socket) => {
           type: 'Point',
           coordinates: [data.longitude, data.latitude]
         },
-        clientId: data.clientId // Store the client ID
+        clientId: data.clientId
       });
       
       await Promise.race([
@@ -164,7 +226,7 @@ io.on('connection', async (socket) => {
         location: buttonPress.location,
         pressedAt: buttonPress.pressedAt,
         stats: stats,
-        clientId: data.clientId // Include the client ID in the broadcast
+        clientId: data.clientId
       });
 
     } catch (error) {
@@ -195,7 +257,7 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', turnstileMiddleware(), async (req, res) => {
   console.log('Received request for /api/stats');
   try {
     const stats = await CountryStats.find().sort('-pressCount');
@@ -206,7 +268,7 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-app.get('/api/lastButtonPress', async (req, res) => {
+app.get('/api/lastButtonPress', turnstileMiddleware(), async (req, res) => {
   try {
     const lastPress = await ButtonPress.findOne()
       .sort('-pressedAt')
@@ -227,7 +289,7 @@ app.get('/api/lastButtonPress', async (req, res) => {
   }
 });
 
-app.get('/api/recent-presses', async (req, res) => {
+app.get('/api/recent-presses', turnstileMiddleware(), async (req, res) => {
   try {
     const recentPresses = await ButtonPress.find()
       .sort('-pressedAt')
