@@ -12,7 +12,6 @@ export const trackPageView = (path) => {
 
 // Track button clicks
 export const trackButtonClick = (buttonName, category = "Button Click", additionalParams = {}) => {
-  console.log("Tracking button click:", buttonName, category, additionalParams);
   ReactGA.event({
     category: category,
     action: "click",
