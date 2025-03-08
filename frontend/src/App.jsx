@@ -6,13 +6,15 @@ import Particles from './components/Particles'
 import ConnectedUsers from './components/ConnectedUsers'
 import LastPress from './components/LastPress'
 import { socketService } from './services/socketService'
+import { initGA, trackButtonClick, trackPageView } from './utils/analytics'
 import './App.css'
 
 // Development flag from environment variables
 const USE_DUMMY_DATA = import.meta.env.VITE_USE_DUMMY_DATA === 'true';
 
-// Import API_URL at the top
+// Import API_URL and GA Measurement ID from environment variables
 const API_URL = import.meta.env.VITE_API_URL;
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID;
 
 // Helper function to generate random coordinates
 const getRandomCoordinates = () => {
@@ -116,6 +118,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Initialize Google Analytics
+    if (GA_MEASUREMENT_ID) {
+      initGA(GA_MEASUREMENT_ID);
+      trackPageView(window.location.pathname);
+    }
+
     // Connect to WebSocket server
     socketService.connect();
     
@@ -154,6 +162,12 @@ function App() {
   }, []);
 
   const handleButtonPress = useCallback(async () => {
+    // Track the button click event
+    trackButtonClick('Main Button', 'User Action', {
+      value: 1,
+      nonInteraction: false
+    });
+
     if (!isAnimating && canPress) {
       try {
         // In development mode, get and log real location but use dummy data for the press
